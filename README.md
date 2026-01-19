@@ -67,18 +67,6 @@ USB Disk
 
 --
 
-SSD 1
- └── Ubuntu Server 22.04 (Host OS)
-
-SSD 2
- └── /data
-     └── KVM VM disks (Windows 10)
-
-USB Disk
- └── Backup target (mount → sync → unmount)
-
----
-
 STEP 1 – Base System Preparation (Fresh Ubuntu)
 
 sudo apt update && sudo apt upgrade -y
