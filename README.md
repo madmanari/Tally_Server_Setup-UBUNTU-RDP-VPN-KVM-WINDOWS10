@@ -5,7 +5,7 @@ WireGuard is deployed using the wg-easy (jc21) Docker image, with Ubuntu Host as
 
 
 
-/**
+**
  * Lenovo TS150 – Ubuntu KVM Remote Tally Server
  * Production Setup Guide (wg-easy WireGuard)
  *
@@ -13,7 +13,7 @@ WireGuard is deployed using the wg-easy (jc21) Docker image, with Ubuntu Host as
  * VPN Server   : wg-easy (Docker)
  * VM Client    : Windows 10 (KVM)
  * Access       : VPN → RDP → Tally
- */
+   
 
 
 ---
@@ -342,7 +342,5 @@ Test backups weekly
 
 
 
----
 
-End of Documentation
 
