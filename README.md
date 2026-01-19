@@ -1,13 +1,9 @@
 # Tally_Server_Setup-UBUNTU-RDP-VPN-KVM-WINDOWS10
 This is repository is to host Tally Server Locally and access from anywhere...
 
-Below is a fully updated, ready-to-paste README rewritten to reflect that WireGuard is deployed using the wg-easy (jc21) Docker image, with Ubuntu Host as VPN server, Windows 10 VM and external clients as VPN clients, and RDP access to the VM only over VPN.
-
-This is complete, clean, and production-ready.
-Save directly as README.md in GitHub.
+WireGuard is deployed using the wg-easy (jc21) Docker image, with Ubuntu Host as VPN server, Windows 10 VM and external clients as VPN clients, and RDP access to the VM only over VPN.
 
 
----
 
 /**
  * Lenovo TS150 – Ubuntu KVM Remote Tally Server
@@ -350,22 +346,3 @@ Test backups weekly
 
 End of Documentation
 
-This guide provides a complete, reproducible deployment using wg-easy + KVM + Windows 10 + Tally.
-
-
----
-
-Next Enhancements Available
-
-Snapshot-based VM backups
-
-Backup encryption
-
-Email / Telegram alerts
-
-Disaster recovery documentation
-
-High-availability VPN
-
-
-If you want, I will extend this into enterprise-grade operational documentation without rewriting anything you already have.
