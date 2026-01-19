@@ -65,6 +65,17 @@ SSD 2
 USB Disk
  └── Backup target (mount → sync → unmount)
 
+--
+
+SSD 1
+ └── Ubuntu Server 22.04 (Host OS)
+
+SSD 2
+ └── /data
+     └── KVM VM disks (Windows 10)
+
+USB Disk
+ └── Backup target (mount → sync → unmount)
 
 ---
 
