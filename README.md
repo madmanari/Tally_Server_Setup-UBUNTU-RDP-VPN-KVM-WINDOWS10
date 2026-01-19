@@ -1,27 +1,42 @@
-# Lenovo TS150 – Ubuntu KVM Windows 10 Remote Tally Server
+# Lenovo TS150 – Ubuntu KVM + Docker Application Server
 
 ## Overview
 
-This repository documents the complete setup of a **Lenovo TS150 server** running **Ubuntu Server 22.04 LTS**, hosting a **Windows 10 virtual machine on KVM**, and providing **secure remote access using WireGuard VPN (wg-easy Docker)**.
+This repository documents a **production-grade deployment** of a Lenovo TS150 server running **Ubuntu Server 22.04 LTS**, hosting:
 
-### Primary Use Case
-- Centralized **Tally** deployment
-- Up to **6 concurrent RDP users**
-- **VPN-only access** (no public RDP exposure)
-- Simple VPN client management via **wg-easy Web UI**
+- A **Windows 10 KVM virtual machine** for multi-user Tally access
+- A **Docker application stack** for internal business services
+- Secure remote access via **WireGuard (wg-easy)**
+- HTTPS access using **Nginx Proxy Manager (jc21)**
+
+This setup is designed for **small to medium office environments** with centralized services and strict network security.
 
 ---
 
-## Hardware Configuration
+## Server Specifications & Resource Allocation
 
+### Physical Server
 | Component | Specification |
-|---------|--------------|
-| Server | Lenovo TS150 |
-| RAM | 16 GB |
+|---------|---------------|
+| Model | Lenovo TS150 |
+| Total RAM | 16 GB |
 | CPU | Multi-core |
-| SSD 1 | Ubuntu OS |
-| SSD 2 | VM Data Disk |
-| USB | Backup Disk |
+| Storage | 2× SSD + USB Backup |
+
+### Memory Allocation
+| Layer | RAM |
+|-----|-----|
+| Ubuntu Host + Docker Services | 8 GB |
+| Windows 10 KVM VM | 8 GB |
+| **Total** | **16 GB** |
+
+### Docker Services (Host)
+- Nginx Proxy Manager (HTTPS / Reverse Proxy)
+- WireGuard (wg-easy)
+- n8n (Automation)
+- Plane (Project Management)
+- Odoo (ERP)
+- Frappe Framework (ERPNext base)
 
 ---
 
@@ -30,6 +45,7 @@ This repository documents the complete setup of a **Lenovo TS150 server** runnin
 ```text
 SSD 1
  └── Ubuntu Server 22.04 (Host OS)
+     └── /opt (Docker stacks)
 
 SSD 2
  └── /data
@@ -41,7 +57,21 @@ USB Disk
 
 ---
 
-## STEP 1 – Base System Preparation (Fresh Ubuntu)
+## Network Architecture
+
+```text
+Remote User
+   │
+   └── WireGuard VPN (wg-easy)
+           │
+           └── Ubuntu Host
+               ├── Docker Services (HTTPS via NPM)
+               └── Windows 10 VM (RDP + Tally)
+```
+
+---
+
+# STEP 1 – Base System Preparation (Fresh Ubuntu)
 
 ```bash
 sudo apt update && sudo apt upgrade -y
@@ -54,7 +84,7 @@ sudo timedatectl set-timezone Asia/Kolkata
 
 ---
 
-## STEP 2 – Prepare Data Disk (SSD 2)
+# STEP 2 – Prepare Data Disk (SSD 2)
 
 ```bash
 lsblk
@@ -91,7 +121,7 @@ sudo mount -a
 
 ---
 
-## STEP 3 – Install KVM Virtualization
+# STEP 3 – Install KVM Virtualization
 
 ```bash
 sudo apt install -y qemu-kvm libvirt-daemon-system libvirt-clients bridge-utils virt-manager
@@ -107,15 +137,9 @@ sudo usermod -aG libvirt,kvm $USER
 newgrp libvirt
 ```
 
-Verify:
-
-```bash
-virsh list --all
-```
-
 ---
 
-## STEP 4 – Create Windows 10 VM
+# STEP 4 – Create Windows 10 VM (Tally Server)
 
 ```bash
 mkdir -p /data/vm
@@ -126,15 +150,16 @@ qemu-img create -f qcow2 /data/vm/win10.qcow2 150G
 virt-install --name win10-tally --ram 8192 --vcpus 4 --disk path=/data/vm/win10.qcow2,format=qcow2 --os-variant win10 --cdrom /iso/Windows10.iso --network network=default --graphics vnc
 ```
 
-### Inside Windows VM
-- Install **Tally**
-- Install **RDP Wrapper**
-- Enable **6 concurrent users**
-- Install **WireGuard client**
+### Windows VM Configuration
+- RAM: **8 GB**
+- vCPU: **4**
+- RDP Wrapper: **6 concurrent users**
+- Applications: **Tally**
+- WireGuard Client installed
 
 ---
 
-## STEP 5 – Install Docker (Required for wg-easy)
+# STEP 5 – Install Docker
 
 ```bash
 sudo apt install -y ca-certificates curl gnupg
@@ -161,79 +186,37 @@ sudo systemctl start docker
 
 ---
 
-## STEP 6 – Deploy WireGuard using wg-easy (jc21)
+# STEP 6 – Docker Application Stack
 
-```bash
-sudo mkdir -p /opt/wg-easy
-cd /opt/wg-easy
-```
+## Core Infrastructure
+- Nginx Proxy Manager
+- WireGuard (wg-easy)
 
-Create `docker-compose.yml`:
+## Business Applications
+- n8n
+- Plane
+- Odoo
+- Frappe / ERPNext
 
-```yaml
-version: "3.8"
-
-services:
-  wg-easy:
-    image: weejewel/wg-easy
-    container_name: wg-easy
-    environment:
-      WG_HOST: <PUBLIC_IP_OR_DOMAIN>
-      PASSWORD: <STRONG_ADMIN_PASSWORD>
-      WG_DEFAULT_ADDRESS: 10.10.0.x
-      WG_DEFAULT_DNS: 1.1.1.1
-    volumes:
-      - ./config:/etc/wireguard
-    ports:
-      - "51820:51820/udp"
-      - "51821:51821/tcp"
-    cap_add:
-      - NET_ADMIN
-      - SYS_MODULE
-    sysctls:
-      - net.ipv4.ip_forward=1
-      - net.ipv4.conf.all.src_valid_mark=1
-    restart: unless-stopped
-```
-
-```bash
-docker compose up -d
-```
-
-Access UI:
-
-```text
-http://SERVER_IP:51821
-```
+_All services are deployed using Docker Compose under `/opt` and exposed only via HTTPS reverse proxy._
 
 ---
 
-## STEP 7 – VPN Client Setup
+# STEP 7 – WireGuard (wg-easy)
 
-- Create **Windows VM** client in wg-easy
-- Create **remote user** clients
-- Import config in WireGuard client
+- UDP **51820** exposed
+- Web UI protected via HTTPS reverse proxy
+- No direct IP/port access
 
----
-
-## STEP 8 – Remote Access Flow
-
-```text
-Remote User
-   │
-   └── WireGuard VPN (wg-easy)
-           │
-           └── Ubuntu Host
-                    │
-                    └── Windows 10 VM (RDP + Tally)
-```
+Clients:
+- Windows 10 VM
+- Remote users
 
 ---
 
-## STEP 9 – Backup Strategy (USB Disk)
+# STEP 8 – Backup Strategy
 
 ### Manual Backup
-
 ```bash
 sudo mount /dev/sdc1 /mnt/backup
 rsync -av /data/ /mnt/backup/data/
@@ -242,7 +225,6 @@ sudo umount /mnt/backup
 ```
 
 ### Automated Backup
-
 ```bash
 sudo crontab -e
 ```
@@ -253,16 +235,24 @@ sudo crontab -e
 
 ---
 
-## Maintenance Checklist
+## Security Highlights
 
-- Ubuntu updates (monthly)
-- Windows VM updates
+- VPN-only internal access
+- HTTPS everywhere
+- No public RDP exposure
+- Segregated workloads (VM vs containers)
+
+---
+
+## Maintenance
+
+- Monthly OS updates
 - Docker image updates
-- VPN client audit
 - Backup verification
+- VPN peer audit
 
 ---
 
 ## License
 
-Internal infrastructure documentation. Use at your own risk.
+This project is licensed under the **MIT License**.
